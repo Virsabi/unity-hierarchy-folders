@@ -185,6 +185,8 @@ namespace UnityHierarchyFolders.Runtime
         /// <summary>Takes direct children and links them to the parent transform or global.</summary>
         public void Flatten()
         {
+            if (Application.isEditor)
+                return;
             // gather first-level children
             int index = this.transform.GetSiblingIndex(); // keep components in logical order
             foreach (var child in this.transform.GetComponentsInChildren<Transform>(includeInactive: true))
