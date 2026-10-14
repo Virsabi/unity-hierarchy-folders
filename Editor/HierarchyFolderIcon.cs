@@ -71,8 +71,10 @@ namespace UnityHierarchyFolders.Editor
         [InitializeOnLoadMethod]
         private static void Startup()
         {
+#if !UNITY_6000_0_OR_NEWER // the internal hierarchy APIs used below changed in Unity 6; folder icon tinting is cosmetic
             EditorApplication.update += ResetFolderIcons;
             EditorApplication.hierarchyWindowItemOnGUI += RefreshFolderIcons;
+#endif
         }
 
         private static Texture2D GetTintedTexture(Texture2D original, Color tint, string name = "") =>
