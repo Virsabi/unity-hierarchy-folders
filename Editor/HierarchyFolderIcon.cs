@@ -15,11 +15,9 @@ namespace UnityHierarchyFolders.Editor
 {
     public class HierarchyFolderIcon
     {
-#if UNITY_2020_1_OR_NEWER
-        private const string _openedFolderPrefix = "FolderOpened";
-#else
-        private const string _openedFolderPrefix = "OpenedFolder";
-#endif
+        // the built-in icon was renamed OpenedFolder -> FolderOpened; late 2019.4 releases already use the
+        // new name, so try both instead of guessing from the version
+        private static readonly string[] _openedFolderIconNames = { "FolderOpened Icon", "OpenedFolder Icon" };
         private const string _closedFolderPrefix = "Folder";
 
         private static Texture2D _openFolderTexture;
@@ -28,6 +26,7 @@ namespace UnityHierarchyFolders.Editor
         private static Texture2D _closedFolderSelectedTexture;
 
         private static bool _isInitialized;
+        private static bool _isDisabled;
         private static bool _hasProcessedFrame = true;
 
 
@@ -116,13 +115,21 @@ namespace UnityHierarchyFolders.Editor
         {
             if (_isInitialized) { return; }
 
-            _openFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_openedFolderPrefix} Icon").image;
-            _closedFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_closedFolderPrefix} Icon").image;
+            // FindTexture returns null for an unknown name instead of logging an error like IconContent
+            _openFolderTexture = _openedFolderIconNames.Select(EditorGUIUtility.FindTexture).FirstOrDefault(t => t != null);
+            _closedFolderTexture = EditorGUIUtility.FindTexture($"{_closedFolderPrefix} Icon");
+            if (_openFolderTexture == null || _closedFolderTexture == null)
+            {
+                // icons not available in this editor version: leave the hierarchy untinted
+                _isDisabled = true;
+                _isInitialized = true;
+                return;
+            }
 
             // We could use the actual white folder icons but I prefer the look of the tinted white folder icon
             // To use the actual white version:
             // texture = (Texture2D) EditorGUIUtility.IconContent($"{OpenedFolderPrefix | ClosedFolderPrefix} On Icon").image;
-            _openFolderSelectedTexture = GetWhiteTexture(_openFolderTexture, $"{_openedFolderPrefix} Icon White");
+            _openFolderSelectedTexture = GetWhiteTexture(_openFolderTexture, $"{_openFolderTexture.name} White");
             _closedFolderSelectedTexture = GetWhiteTexture(_closedFolderTexture, $"{_closedFolderPrefix} Icon White");
 
             _coloredFolderIcons = new (Texture2D, Texture2D)[] { (_openFolderTexture, _closedFolderTexture) };
@@ -179,7 +186,7 @@ namespace UnityHierarchyFolders.Editor
 
         private static void RefreshFolderIcons(int instanceid, Rect selectionrect)
         {
-            if (_hasProcessedFrame) { return; }
+            if (_isDisabled || _hasProcessedFrame) { return; }
 
             _hasProcessedFrame = true;
 
